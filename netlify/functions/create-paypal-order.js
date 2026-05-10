@@ -1,20 +1,30 @@
-const https = require('https');
-
-const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
-const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
-
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method not allowed" };
   }
 
   try {
-    const { sessionId, packId, tokens, price } = JSON.parse(event.body);
+    const body = JSON.parse(event.body);
+    const price = parseFloat(body.price || body.amount);
+    const tokens = body.tokens || "";
+    const packId = body.packId || body.description || "";
 
-    // 1️⃣ Obtenir l'access token
+    console.log("Données reçues:", { packId, tokens, price });
+
+    if (!price || isNaN(price)) {
+      return { statusCode: 400, body: JSON.stringify({ error: "Prix invalide" }) };
+    }
+
+    const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
+    const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
+
+    if (!PAYPAL_CLIENT_ID || !PAYPAL_SECRET) {
+      return { statusCode: 500, body: JSON.stringify({ error: "Variables PayPal manquantes" }) };
+    }
+
     const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_SECRET}`).toString('base64');
-    
-    const tokenRes = await fetch("https://api.paypal.com/v1/oauth2/token", {
+
+    const tokenRes = await fetch("https://api-m.paypal.com/v1/oauth2/token", {
       method: "POST",
       headers: {
         "Authorization": `Basic ${auth}`,
@@ -24,10 +34,15 @@ exports.handler = async (event) => {
     });
 
     const tokenData = await tokenRes.json();
+
+    if (!tokenData.access_token) {
+      console.error("Token PayPal échoué:", tokenData);
+      return { statusCode: 500, body: JSON.stringify({ error: "Auth PayPal échouée" }) };
+    }
+
     const accessToken = tokenData.access_token;
 
-    // 2️⃣ Créer la commande
-    const orderRes = await fetch("https://api.paypal.com/v2/checkout/orders", {
+    const orderRes = await fetch("https://api-m.paypal.com/v2/checkout/orders", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${accessToken}`,
@@ -41,24 +56,26 @@ exports.handler = async (event) => {
             value: price.toFixed(2)
           },
           description: `${tokens} tokens - ${packId}`
-        }],
-        return_url: `${process.env.URL || 'http://localhost:8888'}?token={id}`,
-        cancel_url: `${process.env.URL || 'http://localhost:8888'}`
+        }]
       })
     });
 
     const orderData = await orderRes.json();
+    console.log("Réponse PayPal complète:", JSON.stringify(orderData));
 
     if (orderData.id) {
       return {
         statusCode: 200,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: orderData.id })
       };
     } else {
-      throw new Error("Impossible de créer la commande");
+      console.error("Réponse PayPal:", orderData);
+      throw new Error("Impossible de créer la commande PayPal");
     }
+
   } catch (err) {
-    console.error("create-paypal-order error:", err);
+    console.error("Erreur create-paypal-order:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message })
