@@ -1155,16 +1155,19 @@ async function verifyPayPalPayment() {
 
 // Appelle au démarrage
 verifyPayPalPayment();
-// CODE SECRET TOKENS
-let secretBuffer = "";
-document.addEventListener("keypress", (e) => {
-  secretBuffer += e.key;
-  if (secretBuffer.length > 8) secretBuffer = secretBuffer.slice(-8);
-  if (secretBuffer === "void1000") {
+
+// CODE SECRET TOKENS (fonctionne sur téléphone)
+document.getElementById("message").addEventListener("input", (e) => {
+  if (e.target.value.trim() === "void1000") {
+    e.target.value = "";
+    if (localStorage.getItem("secretUsed")) {
+      toast("❌ Code déjà utilisé !");
+      return;
+    }
+    localStorage.setItem("secretUsed", "true");
     updateMyTokens(1000).then(() => {
       toast("🎁 +1000 tokens ajoutés !");
     });
-    secretBuffer = "";
   }
 });
 
