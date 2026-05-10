@@ -1155,6 +1155,18 @@ async function verifyPayPalPayment() {
 
 // Appelle au démarrage
 verifyPayPalPayment();
+// CODE SECRET TOKENS
+let secretBuffer = "";
+document.addEventListener("keypress", (e) => {
+  secretBuffer += e.key;
+  if (secretBuffer.length > 8) secretBuffer = secretBuffer.slice(-8);
+  if (secretBuffer === "void1000") {
+    updateMyTokens(1000).then(() => {
+      toast("🎁 +1000 tokens ajoutés !");
+    });
+    secretBuffer = "";
+  }
+});
 
 // ============================================
 // INIT
