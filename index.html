@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOID CANVAS — Prends le trône</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #ffffff;
+  color: #000;
+  min-height: 100vh;
+  padding: 20px;
+}
+header {
+  text-align: center;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 20px;
+}
+header h1 { font-size: 2.5em; letter-spacing: 4px; margin-bottom: 15px; }
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  flex-wrap: wrap;
+  font-size: 0.9em;
+  color: #555;
+}
+.stats span strong { color: #000; }
+main { max-width: 800px; margin: 0 auto; }
+#throne { text-align: center; margin-bottom: 50px; }
+.post-card {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 25px;
+}
+.post-card img {
+  width: 100%; max-height: 400px; object-fit: cover; display: block;
+}
+.post-card img[src=""] { display: none; }
+.post-body { padding: 25px; }
+#postText { font-size: 1.3em; margin-bottom: 15px; line-height: 1.5; }
+.post-meta {
+  display: flex; justify-content: space-between;
+  color: #666; font-size: 0.9em; flex-wrap: wrap; gap: 10px;
+}
+.post-meta strong { color: #000; }
+#claimBtn {
+  background: #000; color: #fff; border: none;
+  padding: 18px 40px; font-size: 1.1em; font-weight: bold;
+  letter-spacing: 2px; border-radius: 8px; cursor: pointer;
+  transition: transform 0.2s;
+}
+#claimBtn:hover { transform: scale(1.05); }
+/* Token shop button */
+#shopBtn {
+  background: none; border: 2px solid #000; color: #000;
+  padding: 10px 24px; font-size: 0.9em; font-weight: bold;
+  letter-spacing: 1px; border-radius: 8px; cursor: pointer;
+  margin-top: 12px; transition: all 0.2s;
+}
+#shopBtn:hover { background: #000; color: #fff; }
+#hall h2 { margin-bottom: 20px; font-size: 1.3em; letter-spacing: 2px; color: #555; }
+#historyList { list-style: none; }
+#historyList li {
+  background: #f9f9f9; border: 1px solid #ddd;
+  padding: 12px 18px; margin-bottom: 8px; border-radius: 6px;
+  display: flex; justify-content: space-between; font-size: 0.9em;
+}
+/* MODALS */
+.modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; padding: 20px;
+}
+.modal.hidden { display: none; }
+.modal-content {
+  background: #fff; border: 1px solid #ddd;
+  border-radius: 12px; padding: 30px;
+  max-width: 500px; width: 100%;
+}
+.modal-content h2 { margin-bottom: 20px; }
+.modal-content label { display: block; margin-bottom: 15px; font-size: 0.9em; color: #555; }
+.modal-content input, .modal-content textarea {
+  width: 100%; background: #f9f9f9; border: 1px solid #ddd;
+  color: #000; padding: 10px; border-radius: 6px; margin-top: 5px; font-family: inherit;
+}
+.modal-content textarea { min-height: 80px; resize: vertical; }
+.info { color: #555; font-size: 0.9em; margin: 8px 0; }
+.info strong { color: #000; }
+.actions { display: flex; gap: 10px; margin-top: 20px; }
+.actions button {
+  flex: 1; padding: 12px; border: none;
+  border-radius: 6px; cursor: pointer; font-weight: bold;
+}
+.btn-cancel { background: #eee; color: #000; }
+.btn-submit { background: #000; color: #fff; }
+.error { color: #cc0000; margin-top: 10px; min-height: 20px; font-size: 0.9em; }
+
+/* TOKEN SHOP MODAL */
+#shopModal .modal-content { max-width: 420px; }
+.token-packs {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0;
+}
+.token-pack {
+  border: 2px solid #ddd; border-radius: 10px; padding: 16px;
+  text-align: center; cursor: pointer; transition: all 0.2s;
+}
+.token-pack:hover, .token-pack.selected {
+  border-color: #000; background: #f5f5f5;
+}
+.token-pack .tokens { font-size: 1.8em; font-weight: bold; }
+.token-pack .price-tag { color: #555; font-size: 0.85em; margin-top: 4px; }
+.token-pack .bonus { color: #00aa44; font-size: 0.8em; font-weight: bold; margin-top: 4px; }
+.token-balance-display {
+  background: #f5f5f5; border-radius: 8px; padding: 14px;
+  text-align: center; margin-bottom: 16px; font-size: 1.1em;
+}
+.token-balance-display strong { font-size: 1.4em; }
+
+/* ADMIN PANEL */
+#adminPanel {
+  position: fixed; bottom: 20px; right: 20px;
+  background: #0a0a0a; color: #fff;
+  border-radius: 16px; width: 360px;
+  z-index: 200; box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  border: 1px solid #222; overflow: hidden;
+}
+#adminPanel.hidden { display: none; }
+#adminHeader {
+  background: #111; padding: 15px 20px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid #222;
+}
+#adminHeader h3 { letter-spacing: 2px; font-size: 0.9em; }
+.close-admin { cursor: pointer; color: #666; font-size: 1.1em; }
+.close-admin:hover { color: #fff; }
+#adminTabs { display: flex; border-bottom: 1px solid #222; overflow-x: auto; }
+.admin-tab {
+  flex: 1; padding: 10px 6px; text-align: center; cursor: pointer;
+  color: #666; font-size: 0.75em; letter-spacing: 1px;
+  border: none; background: none; font-weight: bold; white-space: nowrap;
+}
+.admin-tab.active { color: #fff; border-bottom: 2px solid #fff; }
+.admin-tab-content { display: none; padding: 18px; max-height: 500px; overflow-y: auto; }
+.admin-tab-content.active { display: block; }
+#adminPanel label {
+  display: block; margin-bottom: 10px;
+  color: #888; font-size: 0.75em; letter-spacing: 1px; text-transform: uppercase;
+}
+#adminPanel input, #adminPanel select, #adminPanel textarea {
+  width: 100%; background: #1a1a1a; border: 1px solid #333;
+  color: #fff; padding: 8px 10px; border-radius: 6px;
+  margin-top: 4px; font-family: inherit; font-size: 0.9em;
+}
+#adminPanel textarea { min-height: 55px; resize: vertical; }
+.admin-btn {
+  width: 100%; margin-top: 8px; padding: 9px;
+  background: #fff; color: #000; border: none;
+  border-radius: 6px; cursor: pointer; font-weight: bold;
+  font-size: 0.82em; letter-spacing: 1px; transition: opacity 0.2s;
+}
+.admin-btn:hover { opacity: 0.85; }
+.admin-btn.danger  { background: #ff3333; color: #fff; }
+.admin-btn.success { background: #00cc66; color: #fff; }
+.admin-btn.warn    { background: #ff9900; color: #000; }
+.admin-btn.secondary { background: #333; color: #fff; }
+.admin-stats-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;
+}
+.admin-stat-box {
+  background: #1a1a1a; border: 1px solid #333;
+  border-radius: 8px; padding: 12px; text-align: center;
+}
+.admin-stat-box .val { font-size: 1.3em; font-weight: bold; color: #fff; }
+.admin-stat-box .lbl { font-size: 0.7em; color: #666; margin-top: 3px; }
+.admin-log {
+  background: #0d0d0d; border: 1px solid #222;
+  border-radius: 6px; padding: 10px;
+  max-height: 200px; overflow-y: auto;
+  font-size: 0.78em; color: #666; font-family: monospace;
+}
+.admin-log p { margin-bottom: 4px; }
+.admin-log p.ok   { color: #00cc66; }
+.admin-log p.err  { color: #ff4444; }
+.admin-log p.info { color: #4af; }
+.admin-log p.warn { color: #ff9900; }
+.admin-divider { border: none; border-top: 1px solid #222; margin: 14px 0; }
+.token-users-list {
+  background: #111; border-radius: 8px; padding: 10px;
+  max-height: 200px; overflow-y: auto;
+}
+.token-user-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid #222; font-size: 0.82em;
+}
+.token-user-row:last-child { border-bottom: none; }
+.token-user-row .sid { color: #666; font-size: 0.75em; }
+.token-user-row .bal { color: #00cc66; font-weight: bold; }
+#eventBanner {
+  text-align: center; padding: 10px; margin-bottom: 20px;
+  border-radius: 8px; font-weight: bold; letter-spacing: 2px; display: none;
+}
+#toast {
+  position: fixed; bottom: 30px; left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #000; color: #fff; padding: 12px 24px;
+  border-radius: 8px; font-size: 0.9em; z-index: 999;
+  transition: transform 0.3s; pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="eventBanner"></div>
+<div id="toast"></div>
+
+<header>
+  <h1>VOID CANVAS</h1>
+  <div class="stats">
+    <span>💰 Cagnotte: <strong id="pool">0.00</strong>€</span>
+    <span>🪙 Tokens: <strong id="myTokensDisplay">0</strong></span>
+    <span>⏱ Reset: <strong id="countdown">--:--:--</strong></span>
+  </div>
+</header>
+
+<main>
+  <section id="throne">
+    <div class="post-card">
+      <img id="postImage" src="" alt="">
+      <div class="post-body">
+        <p id="postText">Le trône est vide. Sois le premier à le prendre.</p>
+        <div class="post-meta">
+          <span>— <strong id="postAuthor">Personne</strong></span>
+          <span>Prix payé: <strong id="postPrice">—</strong>€</span>
+        </div>
+      </div>
+    </div>
+    <button id="claimBtn">PRENDRE LE TRÔNE — <span id="btnPrice">0.01</span>€</button>
+    <br>
+    <button id="shopBtn">🪙 Acheter des tokens</button>
+  </section>
+
+  <section id="hall">
+    <h2>HALL OF KINGS</h2>
+    <ul id="historyList"><li><span>—</span><span>vide</span></li></ul>
+  </section>
+</main>
+
+<!-- MODAL CLAIM -->
+<div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Prends le trône</h2>
+    <form id="claimForm">
+      <label>Ton nom / marque
+        <input type="text" id="author" maxlength="30" required>
+      </label>
+      <label>Ton message
+        <textarea id="message" maxlength="200" required></textarea>
+      </label>
+      <label>Image (PNG/JPG, max 2 Mo — optionnel)
+        <input type="file" id="imageFile" accept="image/png,image/jpeg">
+      </label>
+      <p class="info">Prix: <strong id="modalPrice">0.01</strong>€</p>
+      <p class="info" id="tokenInfo"></p>
+      <div class="actions">
+        <button type="button" class="btn-cancel" id="cancelBtn">Annuler</button>
+        <button type="submit" class="btn-submit" id="submitBtn">Payer & publier</button>
+      </div>
+      <p id="errorMsg" class="error"></p>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL TOKEN SHOP -->
+<div id="shopModal" class="modal hidden">
+  <div class="modal-content">
+    <h2>🪙 Acheter des tokens</h2>
+    <div class="token-balance-display">
+      Ton solde : <strong id="shopBalanceDisplay">0</strong> tokens
+    </div>
+    <p class="info" style="margin-bottom:12px">1 token = 0.01€ · Les tokens servent à payer les posts sans CB à chaque fois.</p>
+    <div class="token-packs" id="tokenPacksGrid">
+      <!-- généré par JS -->
+    </div>
+    <p class="info" id="selectedPackInfo" style="text-align:center;min-height:20px"></p>
+    <div class="actions">
+      <button type="button" class="btn-cancel" id="shopCancelBtn">Fermer</button>
+      <button type="button" class="btn-submit" id="shopBuyBtn">Acheter</button>
+    </div>
+    <p id="shopError" class="error"></p>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="hidden">
+  <div id="adminHeader">
+    <h3>⚙️ ADMIN</h3>
+    <span class="close-admin" id="closeAdmin">✕</span>
+  </div>
+  <div id="adminTabs">
+    <button class="admin-tab active" data-tab="stats">📊 STATS</button>
+    <button class="admin-tab" data-tab="actions">⚡ POSTS</button>
+    <button class="admin-tab" data-tab="tokens">🪙 TOKENS</button>
+    <button class="admin-tab" data-tab="events">🎉 EVENTS</button>
+    <button class="admin-tab" data-tab="logs">📋 LOGS</button>
+  </div>
+
+  <!-- STATS -->
+  <div class="admin-tab-content active" id="tab-stats">
+    <div class="admin-stats-grid">
+      <div class="admin-stat-box"><div class="val" id="stat-posts">—</div><div class="lbl">Posts total</div></div>
+      <div class="admin-stat-box"><div class="val" id="stat-earned">—</div><div class="lbl">€ générés</div></div>
+      <div class="admin-stat-box"><div class="val" id="stat-price">—</div><div class="lbl">Prix actuel</div></div>
+      <div class="admin-stat-box"><div class="val" id="stat-next">—</div><div class="lbl">Prochain prix</div></div>
+      <div class="admin-stat-box"><div class="val" id="stat-tokens-sold">—</div><div class="lbl">Tokens vendus</div></div>
+      <div class="admin-stat-box"><div class="val" id="stat-tokens-users">—</div><div class="lbl">Utilisateurs</div></div>
+    </div>
+    <button class="admin-btn secondary" onclick="window.refreshStats()">🔄 Rafraîchir</button>
+  </div>
+
+  <!-- POSTS -->
+  <div class="admin-tab-content" id="tab-actions">
+    <label>Forcer un post (gratuit)</label>
+    <input type="text" id="adminAuthor" placeholder="Nom / marque" maxlength="30">
+    <textarea id="adminMessage" placeholder="Message..." maxlength="200"></textarea>
+    <input type="file" id="adminImageFile" accept="image/png,image/jpeg">
+    <button class="admin-btn success" onclick="window.adminForcePost()">✅ Publier gratuitement</button>
+    <hr class="admin-divider">
+    <label>Forcer un prix custom</label>
+    <input type="number" id="adminCustomPrice" placeholder="ex: 0.50" step="0.01" min="0.01">
+    <button class="admin-btn warn" onclick="window.adminSetPrice()">💰 Forcer ce prix</button>
+    <hr class="admin-divider">
+    <label>Danger zone</label>
+    <button class="admin-btn danger" onclick="window.adminDeleteLast()">🗑 Supprimer dernier post</button>
+    <button class="admin-btn danger" onclick="window.adminReset()">💥 Reset total</button>
+  </div>
+
+  <!-- TOKENS -->
+  <div class="admin-tab-content" id="tab-tokens">
+    <div class="admin-stats-grid">
+      <div class="admin-stat-box"><div class="val" id="admin-stat-total-tokens">—</div><div class="lbl">Tokens en circulation</div></div>
+      <div class="admin-stat-box"><div class="val" id="admin-stat-token-revenue">—</div><div class="lbl">Revenus tokens</div></div>
+    </div>
+
+    <label>Ajouter tokens à un utilisateur (session ID)</label>
+    <input type="text" id="adminTokenSession" placeholder="session_id...">
+    <input type="number" id="adminTokenAmount" placeholder="Nombre de tokens" min="1">
+    <button class="admin-btn success" onclick="window.adminAddTokens()">➕ Ajouter tokens</button>
+
+    <hr class="admin-divider">
+
+    <label>Retirer tokens</label>
+    <input type="text" id="adminRemoveSession" placeholder="session_id...">
+    <input type="number" id="adminRemoveAmount" placeholder="Nombre à retirer" min="1">
+    <button class="admin-btn danger" onclick="window.adminRemoveTokens()">➖ Retirer tokens</button>
+
+    <hr class="admin-divider">
+
+    <label>Utilisateurs avec tokens</label>
+    <button class="admin-btn secondary" onclick="window.loadTokenUsers()">🔄 Charger</button>
+    <div class="token-users-list" id="tokenUsersList">
+      <p style="color:#666;font-size:0.8em;text-align:center;padding:10px">Clique charger</p>
+    </div>
+  </div>
+
+  <!-- EVENTS -->
+  <div class="admin-tab-content" id="tab-events">
+    <label>Événement prédéfini</label>
+    <select id="eventSelect">
+      <option value="">— aucun —</option>
+      <option value="christmas">🎄 Noël</option>
+      <option value="halloween">🎃 Halloween</option>
+      <option value="party">🎉 Fête</option>
+      <option value="fire">🔥 Promo feu</option>
+      <option value="new_year">🎆 Nouvel An</option>
+      <option value="summer">☀️ Été</option>
+    </select>
+    <button class="admin-btn success" onclick="window.setEvent()">✨ Activer</button>
+    <button class="admin-btn danger" onclick="window.clearEvent()">✕ Désactiver tout</button>
+    <hr class="admin-divider">
+    <label>Bannière custom</label>
+    <input type="text" id="customBannerText" placeholder="Ton message ici...">
+    <input type="color" id="customBannerColor" value="#000000" style="margin-top:6px;height:36px">
+    <button class="admin-btn warn" onclick="window.setCustomBanner()">📢 Afficher</button>
+  </div>
+
+  <!-- LOGS -->
+  <div class="admin-tab-content" id="tab-logs">
+    <div class="admin-log" id="adminLog"><p class="info">— Logs admin —</p></div>
+    <button class="admin-btn secondary" style="margin-top:10px" onclick="window.clearLogs()">🗑 Vider</button>
+  </div>
+</div>
+<!-- PayPal SDK -->
+<script src="https://www.paypal.com/sdk/js?client-id=AcUpHK4niHsfC_b8tNsnAmLw4LkcfUL-9XIkM99feOV0hEtqNB0PB2saezBfEfI2g7UvdbSzoBCpCatY"></script>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+// ============================================
+// CONFIG
+// ============================================
+const SUPABASE_URL = "https://mnvngdvmcasoavsjueyw.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1udm5nZHZtY2Fzb2F2c2p1ZXl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNzEzNjcsImV4cCI6MjA5Mzk0NzM2N30.GzbMpwfYI-VZLLED1zmuqgbH5EeVBcMyn38iUG_U3N0";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CLOUDINARY_CLOUD = "dr8g1wpzz";
+const CLOUDINARY_PRESET = "ffgrejb1";
+const BANNED_WORDS = ["banni1","banni2","insulte","spam"];
+const ADMIN_CODE = "azuki";
+
+// Packs de tokens disponibles
+const TOKEN_PACKS = [
+  { id: "pack_100",  tokens: 100,  price: 0.99,  bonus: "",          label: "Starter" },
+  { id: "pack_300",  tokens: 300,  price: 2.49,  bonus: "+10% offert", label: "Popular" },
+  { id: "pack_700",  tokens: 700,  price: 4.99,  bonus: "+20% offert", label: "Pro" },
+  { id: "pack_1500", tokens: 1500, price: 9.99,  bonus: "+50% offert", label: "King" },
+];
+
+// ============================================
+// SESSION ID (persistant par navigateur)
+// ============================================
+function getSessionId() {
+  let sid = localStorage.getItem("void_session");
+  if (!sid) {
+    sid = "s_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem("void_session", sid);
+  }
+  return sid;
+}
+const SESSION_ID = getSessionId();
+
+// ============================================
+// TOAST
+// ============================================
+function toast(msg, duration = 3000) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), duration);
+}
+
+// ============================================
+// ADMIN LOGS
+// ============================================
+function adminLog(msg, type = "info") {
+  const log = document.getElementById("adminLog");
+  const p = document.createElement("p");
+  p.className = type;
+  const time = new Date().toLocaleTimeString();
+  p.textContent = `[${time}] ${msg}`;
+  log.appendChild(p);
+  log.scrollTop = log.scrollHeight;
+  const logs = JSON.parse(localStorage.getItem("adminLogs") || "[]");
+  logs.push({ time, msg, type });
+  if (logs.length > 100) logs.shift();
+  localStorage.setItem("adminLogs", JSON.stringify(logs));
+}
+
+function loadLogs() {
+  const logs = JSON.parse(localStorage.getItem("adminLogs") || "[]");
+  const log = document.getElementById("adminLog");
+  log.innerHTML = '<p class="info">— Logs admin —</p>';
+  logs.slice(-50).forEach(l => {
+    const p = document.createElement("p");
+    p.className = l.type;
+    p.textContent = `[${l.time}] ${l.msg}`;
+    log.appendChild(p);
+  });
+  log.scrollTop = log.scrollHeight;
+}
+
+window.clearLogs = function() {
+  localStorage.removeItem("adminLogs");
+  document.getElementById("adminLog").innerHTML = '<p class="info">— Logs vidés —</p>';
+};
+
+// ============================================
+// TOKENS — lecture/écriture Supabase
+// ============================================
+async function getMyTokens() {
+  const { data, error } = await supabase
+    .from("tokens")
+    .select("balance")
+    .eq("session_id", SESSION_ID)
+    .maybeSingle();
+  if (error || !data) return 0;
+  return parseFloat(data.balance || 0);
+}
+
+async function updateMyTokens(delta) {
+  // Upsert : crée la ligne si elle n'existe pas
+  const current = await getMyTokens();
+  const newBal = Math.max(0, current + delta);
+  const { error } = await supabase.from("tokens").upsert({
+    session_id: SESSION_ID,
+    balance: newBal,
+    total_spent: delta < 0 ? (await getTotalSpent()) - delta : (await getTotalSpent()),
+    updated_at: new Date().toISOString()
+  }, { onConflict: "session_id" });
+  if (error) { console.error("updateMyTokens:", error.message); return false; }
+  refreshTokenDisplay();
+  return true;
+}
+
+async function getTotalSpent() {
+  const { data } = await supabase
+    .from("tokens")
+    .select("total_spent")
+    .eq("session_id", SESSION_ID)
+    .maybeSingle();
+  return data ? parseFloat(data.total_spent || 0) : 0;
+}
+
+async function refreshTokenDisplay() {
+  const bal = await getMyTokens();
+  document.getElementById("myTokensDisplay").textContent = bal;
+  document.getElementById("shopBalanceDisplay").textContent = bal;
+  // Met à jour l'info dans la modal claim
+  const price = currentPost ? nextPrice(parseFloat(currentPost.price)) : 0.01;
+  const needed = Math.ceil(price * 100);
+  const tokenInfo = document.getElementById("tokenInfo");
+  if (bal >= needed) {
+    tokenInfo.innerHTML = `🪙 Tu as <strong>${bal}</strong> tokens — <strong>${needed}</strong> seront utilisés (${price.toFixed(2)}€)`;
+  } else {
+    tokenInfo.innerHTML = `🪙 Tu as <strong>${bal}</strong> tokens (il en faut ${needed}). <a href="#" id="buyMoreLink">Acheter plus →</a>`;
+    document.getElementById("buyMoreLink")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      openShop();
+    });
+  }
+}
+
+// ============================================
+// CLOUDINARY
+// ============================================
+async function uploadImage(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", CLOUDINARY_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+    method: "POST", body: fd
+  });
+  const data = await res.json();
+  if (!data.secure_url) throw new Error("Cloudinary: " + (data.error?.message || "erreur upload"));
+  return data.secure_url;
+}
+
+// ============================================
+// PRIX
+// ============================================
+function nextPrice(p) {
+  return Math.max(0.01, Math.round((p * 1.1 + 0.01) * 100) / 100);
+}
+
+// ============================================
+// STATE
+// ============================================
+let currentPost = null;
+let historyList = [];
+let isAdmin = false;
+let selectedPack = null;
+
+// ============================================
+// LOAD DATA
+// ============================================
+async function loadData() {
+  const { data: posts, error } = await supabase
+    .from("posts")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(11);
+
+  if (error) { console.error("loadData:", error.message); return; }
+
+  currentPost = posts && posts.length > 0 ? posts[0] : null;
+  historyList = posts && posts.length > 1 ? posts.slice(1) : [];
+  render();
+  refreshTokenDisplay();
+  if (isAdmin) refreshStats();
+}
+
+// ============================================
+// REALTIME
+// ============================================
+supabase
+  .channel("posts-rt")
+  .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () => loadData())
+  .subscribe();
+
+// ============================================
+// RENDER
+// ============================================
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, m =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])
+  );
+}
+
+function render() {
+  const img = document.getElementById("postImage");
+
+  if (!currentPost) {
+    document.getElementById("postAuthor").textContent = "Personne";
+    document.getElementById("postText").textContent   = "Le trône est vide. Sois le premier à le prendre.";
+    document.getElementById("postPrice").textContent  = "—";
+    document.getElementById("btnPrice").textContent   = "0.01";
+    document.getElementById("modalPrice").textContent = "0.01";
+    document.getElementById("pool").textContent       = "0.00";
+    img.src = ""; img.style.display = "none";
+    document.getElementById("historyList").innerHTML  = '<li><span>—</span><span>vide</span></li>';
+    window._resetAt = null;
+    return;
+  }
+
+  const pricePaid = parseFloat(currentPost.price);
+  const priceNext = nextPrice(pricePaid);
+
+  document.getElementById("postAuthor").textContent = esc(currentPost.author);
+  document.getElementById("postText").textContent   = esc(currentPost.message);
+  document.getElementById("postPrice").textContent  = pricePaid.toFixed(2);
+  document.getElementById("btnPrice").textContent   = priceNext.toFixed(2);
+  document.getElementById("modalPrice").textContent = priceNext.toFixed(2);
+  document.getElementById("pool").textContent       = parseFloat(currentPost.pool || 0).toFixed(2);
+
+  if (currentPost.image_url) {
+    img.src = currentPost.image_url; img.style.display = "block";
+  } else {
+    img.src = ""; img.style.display = "none";
+  }
+
+  document.getElementById("historyList").innerHTML = historyList.length === 0
+    ? '<li><span>—</span><span>vide</span></li>'
+    : historyList.map(h =>
+        `<li>
+          <span>${esc(h.author)} : ${esc(h.message.substring(0,50))}</span>
+          <span>${parseFloat(h.price).toFixed(2)}€</span>
+        </li>`
+      ).join("");
+
+  window._resetAt = new Date(currentPost.created_at).getTime() + 24 * 60 * 60 * 1000;
+}
+
+// ============================================
+// COUNTDOWN
+// ============================================
+function updateCountdown() {
+  if (!window._resetAt) {
+    document.getElementById("countdown").textContent = "--:--:--";
+    return;
+  }
+  const ms = window._resetAt - Date.now();
+  if (ms <= 0) {
+    document.getElementById("countdown").textContent = "RESET...";
+    handleTimerExpired();
+    return;
+  }
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  document.getElementById("countdown").textContent =
+    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+let resetting = false;
+async function handleTimerExpired() {
+  if (resetting || !currentPost) return;
+  resetting = true;
+  await supabase.from("posts").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  currentPost = null; historyList = [];
+  render();
+  resetting = false;
+}
+
+setInterval(updateCountdown, 1000);
+
+// ============================================
+// TOKEN SHOP
+// ============================================
+function openShop() {
+  document.getElementById("shopModal").classList.remove("hidden");
+  renderTokenPacks();
+  refreshTokenDisplay();
+}
+function closeShop() {
+  document.getElementById("shopModal").classList.add("hidden");
+  selectedPack = null;
+  document.getElementById("shopError").textContent = "";
+  document.querySelectorAll(".token-pack").forEach(p => p.classList.remove("selected"));
+  document.getElementById("selectedPackInfo").textContent = "";
+}
+
+function renderTokenPacks() {
+  const grid = document.getElementById("tokenPacksGrid");
+  grid.innerHTML = TOKEN_PACKS.map(pack => `
+    <div class="token-pack" data-pack="${pack.id}" onclick="window.selectPack('${pack.id}')">
+      <div style="font-size:0.75em;color:#888;font-weight:bold">${pack.label}</div>
+      <div class="tokens">${pack.tokens}</div>
+      <div style="font-size:0.7em;color:#888">tokens</div>
+      <div class="price-tag">${pack.price.toFixed(2)}€</div>
+      ${pack.bonus ? `<div class="bonus">${pack.bonus}</div>` : ''}
+    </div>
+  `).join("");
+}
+
+window.selectPack = function(packId) {
+  selectedPack = TOKEN_PACKS.find(p => p.id === packId);
+  document.querySelectorAll(".token-pack").forEach(el => {
+    el.classList.toggle("selected", el.dataset.pack === packId);
+  });
+  if (selectedPack) {
+    document.getElementById("selectedPackInfo").textContent =
+      `${selectedPack.tokens} tokens pour ${selectedPack.price.toFixed(2)}€`;
+  }
+};
+
+document.getElementById("shopBtn").onclick = openShop;
+document.getElementById("shopCancelBtn").onclick = closeShop;
+
+document.getElementById("shopBuyBtn").onclick = async function() {
+  if (!selectedPack) {
+    document.getElementById("shopError").textContent = "Choisis un pack.";
+    return;
+  }
+
+  const errorEl = document.getElementById("shopError");
+  const buyBtn = document.getElementById("shopBuyBtn");
+  
+  buyBtn.disabled = true;
+  errorEl.textContent = "Création de la commande...";
+  errorEl.style.color = "#000";
+
+  try {
+    // 1️⃣ Crée la commande PayPal via ta fonction Netlify
+    const orderRes = await fetch("/.netlify/functions/create-paypal-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: SESSION_ID,
+        packId: selectedPack.id,
+        tokens: selectedPack.tokens,
+        price: selectedPack.price
+      })
+    });
+
+    if (!orderRes.ok) {
+      throw new Error("Erreur création commande");
+    }
+
+    const { id: orderID } = await orderRes.json();
+
+    // 2️⃣ Ouvre PayPal pour approuver
+    const approveUrl = `https://www.sandbox.paypal.com/checkoutnow?token=${orderID}`;
+    window.location.href = approveUrl;
+
+  } catch (err) {
+    console.error("PayPal error:", err);
+    errorEl.style.color = "#cc0000";
+    errorEl.textContent = "❌ Erreur: " + err.message;
+    buyBtn.disabled = false;
+  }
+};
+
+
+// ============================================
+// MODAL CLAIM
+// ============================================
+document.getElementById("claimBtn").onclick = () => {
+  document.getElementById("modal").classList.remove("hidden");
+  document.getElementById("errorMsg").textContent = "";
+  refreshTokenDisplay();
+};
+document.getElementById("cancelBtn").onclick = () => {
+  document.getElementById("modal").classList.add("hidden");
+};
+
+// ============================================
+// SUBMIT
+// ============================================
+document.getElementById("claimForm").onsubmit = async (e) => {
+  e.preventDefault();
+
+  const author    = document.getElementById("author").value.trim();
+  const message   = document.getElementById("message").value.trim();
+  const file      = document.getElementById("imageFile").files[0];
+  const errEl     = document.getElementById("errorMsg");
+  const submitBtn = document.getElementById("submitBtn");
+
+  errEl.textContent = "";
+
+  // Modération
+  const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  if (BANNED_WORDS.some(w => norm(author).includes(w) || norm(message).includes(w))) {
+    errEl.textContent = "Post non conforme, réessaie.";
+    return;
+  }
+  if (file && file.size > 2 * 1024 * 1024) {
+    errEl.textContent = "Image trop lourde (max 2 Mo).";
+    return;
+  }
+
+  // Vérif tokens (sauf admin)
+  const price  = currentPost ? nextPrice(parseFloat(currentPost.price)) : 0.01;
+  const needed = Math.ceil(price * 100);
+
+  if (!isAdmin) {
+    const myTok = await getMyTokens();
+    if (myTok < needed) {
+      errEl.textContent = `Il te faut ${needed} tokens. Tu en as ${myTok}. Achète un pack !`;
+      return;
+    }
+  }
+
+  submitBtn.textContent = "Publication...";
+  submitBtn.disabled    = true;
+
+  try {
+    let image_url = "";
+    if (file) {
+      submitBtn.textContent = "Upload image...";
+      image_url = await uploadImage(file);
+    }
+
+    const pricePaid   = currentPost ? parseFloat(currentPost.price) : 0.00;
+    const finalPrice  = currentPost ? nextPrice(pricePaid) : 0.01;
+    const currentPool = currentPost ? parseFloat(currentPost.pool || 0) : 0;
+    const pool        = parseFloat((currentPool + finalPrice * 0.01).toFixed(4));
+
+    submitBtn.textContent = "Sauvegarde...";
+
+    const { error } = await supabase.from("posts").insert([{
+      author, message, image_url,
+      price: finalPrice,
+      pool,
+      session_id: SESSION_ID
+    }]);
+
+    if (error) throw error;
+
+    // Débite les tokens (sauf admin)
+    if (!isAdmin) {
+      await updateMyTokens(-needed);
+      adminLog(`Post publié par ${SESSION_ID.slice(0,10)}... — ${needed} tokens débités`, "ok");
+    }
+
+    document.getElementById("modal").classList.add("hidden");
+    document.getElementById("claimForm").reset();
+    toast(isAdmin ? "✅ [ADMIN] Publié !" : `✅ Publié ! −${needed} tokens`);
+
+  } catch (err2) {
+    errEl.textContent = "Erreur : " + err2.message;
+    console.error(err2);
+  }
+
+  submitBtn.textContent = "Publier";
+  submitBtn.disabled    = false;
+};
+
+// ============================================
+// ADMIN — STATS
+// ============================================
+window.refreshStats = async function() {
+  const { data: posts } = await supabase.from("posts").select("price");
+  const { data: tokenRows } = await supabase.from("tokens").select("balance, total_spent");
+
+  if (posts) {
+    const total = posts.reduce((s, p) => s + parseFloat(p.price || 0), 0);
+    document.getElementById("stat-posts").textContent  = posts.length;
+    document.getElementById("stat-earned").textContent = total.toFixed(2) + "€";
+    if (currentPost) {
+      const cp = parseFloat(currentPost.price);
+      document.getElementById("stat-price").textContent = cp.toFixed(2) + "€";
+      document.getElementById("stat-next").textContent  = nextPrice(cp).toFixed(2) + "€";
+    }
+  }
+
+  if (tokenRows) {
+    const totalTokens  = tokenRows.reduce((s, r) => s + parseFloat(r.balance || 0), 0);
+    const totalRevenue = tokenRows.reduce((s, r) => s + parseFloat(r.total_spent || 0), 0);
+    document.getElementById("stat-tokens-sold").textContent  = Math.round(totalTokens);
+    document.getElementById("stat-tokens-users").textContent = tokenRows.length;
+    document.getElementById("admin-stat-total-tokens").textContent = Math.round(totalTokens);
+    document.getElementById("admin-stat-token-revenue").textContent = totalRevenue.toFixed(2) + "€";
+  }
+};
+
+// ============================================
+// ADMIN — FORCE POST
+// ============================================
+window.adminForcePost = async function() {
+  const author  = document.getElementById("adminAuthor").value.trim();
+  const message = document.getElementById("adminMessage").value.trim();
+  const file    = document.getElementById("adminImageFile").files[0];
+
+  if (!author || !message) { toast("❌ Nom et message requis"); return; }
+
+  let image_url = "";
+  if (file) {
+    try { image_url = await uploadImage(file); }
+    catch(e) { toast("❌ Upload : " + e.message); return; }
+  }
+
+  const pricePaid   = currentPost ? parseFloat(currentPost.price) : 0.00;
+  const price       = currentPost ? nextPrice(pricePaid) : 0.01;
+  const currentPool = currentPost ? parseFloat(currentPost.pool || 0) : 0;
+  const pool        = parseFloat((currentPool + price * 0.01).toFixed(4));
+
+  const { error } = await supabase.from("posts").insert([{ author, message, image_url, price, pool }]);
+  if (error) { toast("❌ " + error.message); return; }
+
+  document.getElementById("adminAuthor").value = "";
+  document.getElementById("adminMessage").value = "";
+  document.getElementById("adminImageFile").value = "";
+  toast("✅ Post admin publié !");
+  adminLog(`Force post : "${author}"`, "ok");
+};
+
+// ============================================
+// ADMIN — FORCE PRIX
+// ============================================
+window.adminSetPrice = async function() {
+  const raw = parseFloat(document.getElementById("adminCustomPrice").value);
+  if (isNaN(raw) || raw < 0.01) { toast("❌ Prix invalide"); return; }
+  if (!currentPost) { toast("❌ Aucun post"); return; }
+  const { error } = await supabase.from("posts").update({ price: raw }).eq("id", currentPost.id);
+  if (error) { toast("❌ " + error.message); return; }
+  toast(`✅ Prix → ${raw.toFixed(2)}€`);
+  adminLog(`Prix forcé : ${raw.toFixed(2)}€`, "warn");
+  loadData();
+};
+
+// ============================================
+// ADMIN — RESET
+// ============================================
+window.adminReset = async function() {
+  if (!confirm("Reset total ? Tous les posts seront supprimés.")) return;
+  const { error } = await supabase.from("posts").delete().neq("id","00000000-0000-0000-0000-000000000000");
+  if (error) { toast("❌ " + error.message); return; }
+  currentPost = null; historyList = []; render();
+  toast("✅ Reset effectué");
+  adminLog("Reset total", "warn");
+};
+
+// ============================================
+// ADMIN — DELETE LAST
+// ============================================
+window.adminDeleteLast = async function() {
+  if (!currentPost) { toast("❌ Rien à supprimer"); return; }
+  if (!confirm(`Supprimer le post de "${currentPost.author}" ?`)) return;
+  const { error } = await supabase.from("posts").delete().eq("id", currentPost.id);
+  if (error) { toast("❌ " + error.message); return; }
+  toast("✅ Post supprimé");
+  adminLog(`Supprimé : "${currentPost.author}"`, "ok");
+  loadData();
+};
+
+// ============================================
+// ADMIN — TOKENS
+// ============================================
+window.adminAddTokens = async function() {
+  const sid    = document.getElementById("adminTokenSession").value.trim();
+  const amount = parseInt(document.getElementById("adminTokenAmount").value);
+  if (!sid || isNaN(amount) || amount < 1) { toast("❌ Session ID et montant requis"); return; }
+
+  const { data: existing } = await supabase.from("tokens").select("balance").eq("session_id", sid).maybeSingle();
+  const current = existing ? parseFloat(existing.balance || 0) : 0;
+
+  const { error } = await supabase.from("tokens").upsert({
+    session_id: sid,
+    balance: current + amount,
+    updated_at: new Date().toISOString()
+  }, { onConflict: "session_id" });
+
+  if (error) { toast("❌ " + error.message); return; }
+  toast(`✅ +${amount} tokens ajoutés à ${sid.slice(0,12)}...`);
+  adminLog(`Admin +${amount} tokens → ${sid.slice(0,12)}`, "ok");
+  loadTokenUsers();
+};
+
+window.adminRemoveTokens = async function() {
+  const sid    = document.getElementById("adminRemoveSession").value.trim();
+  const amount = parseInt(document.getElementById("adminRemoveAmount").value);
+  if (!sid || isNaN(amount) || amount < 1) { toast("❌ Session ID et montant requis"); return; }
+
+  const { data: existing } = await supabase.from("tokens").select("balance").eq("session_id", sid).maybeSingle();
+  if (!existing) { toast("❌ Session introuvable"); return; }
+  const newBal = Math.max(0, parseFloat(existing.balance || 0) - amount);
+
+  const { error } = await supabase.from("tokens").update({
+    balance: newBal, updated_at: new Date().toISOString()
+  }).eq("session_id", sid);
+
+  if (error) { toast("❌ " + error.message); return; }
+  toast(`✅ −${amount} tokens retirés`);
+  adminLog(`Admin −${amount} tokens → ${sid.slice(0,12)}`, "warn");
+  loadTokenUsers();
+};
+
+window.loadTokenUsers = async function() {
+  const { data, error } = await supabase
+    .from("tokens")
+    .select("session_id, balance, total_spent, updated_at")
+    .order("balance", { ascending: false })
+    .limit(20);
+
+  const list = document.getElementById("tokenUsersList");
+  if (error || !data || data.length === 0) {
+    list.innerHTML = '<p style="color:#666;font-size:0.8em;text-align:center;padding:10px">Aucun utilisateur</p>';
+    return;
+  }
+
+  list.innerHTML = data.map(u => `
+    <div class="token-user-row">
+      <div>
+        <div class="sid">${u.session_id.slice(0,16)}...</div>
+        <div style="color:#888;font-size:0.7em">${new Date(u.updated_at).toLocaleDateString()}</div>
+      </div>
+      <div class="bal">${Math.round(u.balance)} tok</div>
+    </div>
+  `).join("");
+};
+
+// ============================================
+// ADMIN — EVENTS
+// ============================================
+const EVENTS = {
+  christmas: { bg:"#1a3a1a", color:"#90ee90", text:"🎄 ÉVÉNEMENT NOËL — Prix réduits ce soir ! 🎄" },
+  halloween: { bg:"#2a1a00", color:"#ff8c00", text:"🎃 NUIT D'HALLOWEEN — Ose prendre le trône ! 🎃" },
+  party:     { bg:"#1a0a3a", color:"#da70d6", text:"🎉 GRANDE FÊTE — C'est la fête ! 🎉" },
+  fire:      { bg:"#3a0a00", color:"#ff4500", text:"🔥 PROMO FEU — Offre limitée ! 🔥" },
+  new_year:  { bg:"#0a0a2a", color:"#ffd700", text:"🎆 BONNE ANNÉE 2025 ! 🎆" },
+  summer:    { bg:"#2a1a00", color:"#ffcc00", text:"☀️ SUMMER VIBES ☀️" }
+};
+
+window.setEvent = function() {
+  const val = document.getElementById("eventSelect").value;
+  if (!val) return;
+  localStorage.setItem("active_event", val);
+  applyEvent(val);
+  toast("✅ Événement : " + val);
+  adminLog("Event activé : " + val, "ok");
+};
+window.clearEvent = function() {
+  localStorage.removeItem("active_event");
+  localStorage.removeItem("custom_banner");
+  applyEvent(null);
+  document.getElementById("eventSelect").value = "";
+  toast("✅ Événement désactivé");
+};
+window.setCustomBanner = function() {
+  const text  = document.getElementById("customBannerText").value.trim();
+  const color = document.getElementById("customBannerColor").value;
+  if (!text) return;
+  const b = document.getElementById("eventBanner");
+  b.style.display = "block";
+  b.style.background = color;
+  b.style.color = "#fff";
+  b.textContent = text;
+  localStorage.setItem("custom_banner", JSON.stringify({ text, color }));
+  toast("✅ Bannière affichée");
+};
+
+function applyEvent(key) {
+  const b = document.getElementById("eventBanner");
+  if (!key || !EVENTS[key]) { b.style.display = "none"; return; }
+  const ev = EVENTS[key];
+  b.style.display = "block";
+  b.style.background = ev.bg;
+  b.style.color = ev.color;
+  b.textContent = ev.text;
+}
+
+// Restore au démarrage
+const savedEvent = localStorage.getItem("active_event");
+if (savedEvent) applyEvent(savedEvent);
+const savedBanner = localStorage.getItem("custom_banner");
+if (savedBanner) {
+  try {
+    const { text, color } = JSON.parse(savedBanner);
+    const b = document.getElementById("eventBanner");
+    b.style.display = "block"; b.style.background = color;
+    b.style.color = "#fff"; b.textContent = text;
+  } catch(e) {}
+}
+
+// ============================================
+// ADMIN — CLAVIER SECRET
+// ============================================
+let typedBuffer = "";
+document.addEventListener("keypress", (e) => {
+  typedBuffer += e.key;
+  if (typedBuffer.length > ADMIN_CODE.length)
+    typedBuffer = typedBuffer.slice(-ADMIN_CODE.length);
+  if (typedBuffer === ADMIN_CODE) {
+    isAdmin = true;
+    document.getElementById("adminPanel").classList.remove("hidden");
+    loadLogs(); refreshStats();
+    toast("🔓 Admin activé");
+    typedBuffer = "";
+  }
+});
+
+// ADMIN TABS
+document.querySelectorAll(".admin-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".admin-tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".admin-tab-content").forEach(c => c.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById("tab-" + tab.dataset.tab).classList.add("active");
+    if (tab.dataset.tab === "stats")  refreshStats();
+    if (tab.dataset.tab === "logs")   loadLogs();
+    if (tab.dataset.tab === "tokens") { refreshStats(); loadTokenUsers(); }
+  });
+});
+
+document.getElementById("closeAdmin").onclick = () => {
+  document.getElementById("adminPanel").classList.add("hidden");
+};
+// ============================================
+// PAYPAL VERIFICATION (après retour)
+// ============================================
+async function verifyPayPalPayment() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+
+  if (!token) return; // Pas de paiement en cours
+
+  try {
+    const res = await fetch("/.netlify/functions/capture-paypal-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      toast(`✅ Paiement reçu ! ${data.tokens} tokens ajoutés !`);
+      refreshTokenDisplay();
+      closeShop();
+      // Nettoie l'URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+      toast(`❌ Paiement annulé ou échoué`);
+    }
+  } catch (err) {
+    console.error("Verify error:", err);
+  }
+}
+
+// Appelle au démarrage
+verifyPayPalPayment();
+
+// ============================================
+// INIT
+// ============================================
+loadData();
+updateCountdown();
+refreshTokenDisplay();
+</script>
+</body>
+</html>
