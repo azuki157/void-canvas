@@ -24,7 +24,7 @@ exports.handler = async (event) => {
 
     const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_SECRET}`).toString('base64');
 
-    const tokenRes = await fetch("https://api-m.paypal.com/v1/oauth2/token", {
+    const tokenRes = await fetch("https://api-m.sandbox.paypal.com/v1/oauth2/token", {
       method: "POST",
       headers: {
         "Authorization": `Basic ${auth}`,
@@ -42,7 +42,7 @@ exports.handler = async (event) => {
 
     const accessToken = tokenData.access_token;
 
-    const orderRes = await fetch("https://api-m.paypal.com/v2/checkout/orders", {
+    const orderRes = await fetch("https://api-m.sandbox.paypal.com/v2/checkout/orders", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${accessToken}`,
